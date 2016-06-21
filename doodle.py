@@ -104,7 +104,9 @@ print('{}  - Using device `{}` for processing the images.{}'.format(ansi.CYAN, t
 class Model(object):
     """Store all the data related to the neural network (aka. "model"). This is currently based on VGG19.
     """
-
+  
+  
+  #why need pixel mean? same as lua version?
     def __init__(self):
         self.pixel_mean = np.array([103.939, 116.779, 123.680], dtype=np.float32).reshape((3,1,1))
 
@@ -115,6 +117,12 @@ class Model(object):
         """Use lasagne to create a network of convolution layers, first using VGG19 as the framework
         and then adding augmentations for Semantic Style Transfer.
         """
+        """Lasagne is a lightweight library to build and train neural networks in Theano.
+        project: https://github.com/Lasagne/Lasagne
+        The layer feeding into this layer, or the expected input shape. 
+        The output of this layer should be a 4D tensor, with shape (batch_size, num_input_channels, input_rows, input_columns).
+        """
+        
         net, self.channels = {}, {}
 
         # Primary network for the main image. These are convolution only, and stop at layer 4_2 (rest unused).
@@ -145,7 +153,7 @@ class Model(object):
         net['map'] = InputLayer((1, 1, None, None))
         for j, i in itertools.product(range(5), range(4)):
             if j < 2 and i > 1: continue
-            suffix = '%i_%i' % (j+1, i+1)
+            suffix = '%i_%i' % (j+1, i+1)#[0-4][0-3]
 
             if i == 0:
                 net['map%i'%(j+1)] = PoolLayer(net['map'], 2**j, mode='average_exc_pad')
@@ -192,6 +200,7 @@ class Model(object):
         The format is (b,c,y,x) with batch=1 for a single image, channels=3 for RGB, and y,x matching
         the resolution.
         """
+        #same as the preprocess step in the lua file?
         image = np.swapaxes(np.swapaxes(image, 1, 2), 0, 1)[::-1, :, :]
         image = image.astype(np.float32) - self.pixel_mean
         return image[np.newaxis]
@@ -200,13 +209,14 @@ class Model(object):
         """Based on the output of the neural network, convert it into an image format that can be saved
         to disk -- shuffling dimensions as appropriate.
         """
+        #only dealing with the dimensions and waiting for storing image?
         image = np.swapaxes(np.swapaxes(image[::-1], 0, 1), 1, 2)
         image = np.clip(image, 0, 255).astype('uint8')
         return scipy.misc.imresize(image, resolution, interp='bicubic')
 
 
 #----------------------------------------------------------------------------------------------------------------------
-# Semantic Style Transfer
+#ㄓ
 #----------------------------------------------------------------------------------------------------------------------
 class NeuralGenerator(object):
     """This is the main part of the application that generates an image using optimization and LBFGS.
